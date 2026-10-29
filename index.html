@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<title>Coach Conversations</title>
+<style>
+:root{--bg:#0f1115;--card:#181b22;--card2:#20242d;--txt:#eef0f4;--mut:#9aa3b2;--acc:#ff5c7a;--ok:#3ecf8e;--warn:#f5b84b;--bad:#ff6b6b;--bd:#2a2f3a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:78px}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 16px 10px;border-bottom:1px solid var(--bd)}
+header h1{margin:0;font-size:19px}
+header small{color:var(--mut)}
+main{padding:14px 14px 24px;max-width:760px;margin:0 auto}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#12151b;border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:0;color:var(--mut);padding:11px 4px;font-size:12px}
+nav button .i{display:block;font-size:20px}
+nav button.on{color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin:0 0 12px}
+.card h3{margin:0 0 8px;font-size:16px}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,textarea,select{width:100%;background:var(--card2);color:var(--txt);border:1px solid var(--bd);border-radius:10px;padding:10px;font:inherit}
+textarea{min-height:110px;resize:vertical}
+button.b{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:11px 14px;font:inherit;font-weight:600}
+button.b.s{background:var(--card2);color:var(--txt);border:1px solid var(--bd);font-weight:500}
+button.b.d{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+button.b.sm{padding:7px 10px;font-size:14px}
+button:disabled{opacity:.5}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row>*{flex:0 0 auto}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;background:var(--card2);color:var(--mut);border:1px solid var(--bd)}
+.pill.ok{color:var(--ok)}
+.mut{color:var(--mut)}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+ul{margin:6px 0 6px 18px;padding:0}
+li{margin:3px 0}
+.msg{background:var(--card2);border:1px solid var(--bd);border-radius:12px;padding:11px;margin:8px 0;white-space:pre-wrap}
+.msg.best{border-color:var(--acc)}
+.verdict{font-size:17px;font-weight:600}
+.err{background:#3a1d22;border:1px solid var(--bad);color:#ffd5d5;border-radius:10px;padding:10px;margin:8px 0;white-space:pre-wrap}
+.warnbox{background:#3a2f17;border:1px solid var(--warn);color:#ffe9b8;border-radius:10px;padding:10px;margin:8px 0;font-size:14px}
+.note{font-size:13px;color:var(--mut)}
+.hide{display:none}
+.item{padding:12px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;gap:8px}
+.item:last-child{border:0}
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#000c;color:#fff;padding:9px 14px;border-radius:99px;z-index:40;font-size:14px}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid #fff6;border-top-color:#fff;border-radius:50%;animation:r 1s linear infinite;vertical-align:-3px;margin-right:6px}
+@keyframes r{to{transform:rotate(360deg)}}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.th{width:92px}
+.th img{width:92px;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--bd);display:block}
+.th .row{margin-top:4px;gap:4px}
+.modal{position:fixed;inset:0;background:#000e;z-index:30;display:flex;flex-direction:column;padding:10px;gap:8px}
+.modal .cv{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.modal canvas{touch-action:none;max-width:100%;max-height:100%;border:1px solid var(--bd);background:#fff}
+</style>
+</head>
+<body>
+<header><h1>💬 Coach Conversations</h1><small>Tu valides toujours avant d'envoyer</small></header>
+<main id="main"></main>
+<nav id="nav"></nav>
+<script>
+"use strict";
+const KEY = "coach_conv_v1";
+const DEFAULT_PROFILE = [
+"PROFIL DE L'UTILISATEUR (A COMPLETER dans l'onglet Profil)",
+"- Age, genre, situation :",
+"- Personnes recherchees (genre, tranche d'age, zones) :",
+"- Intention (relation serieuse, rencontres legeres, selon la personne...) :",
+"- Qualites recherchees :",
+"- Comportements eliminatoires :",
+"- Sujets a eviter dans les messages :",
+"",
+"OBJECTIFS",
+"- ",
+"",
+"STYLE D'ECRITURE",
+"- Tutoiement ou vouvoiement, longueur des phrases, humour, argot, emojis :",
+"- Exemples de messages qui te ressemblent :",
+"- Exemple de message que tu trouves artificiel :",
+"",
+"POINTS DE VIGILANCE (a signaler gentiment)",
+"- ",
+"",
+"REGLES DE RELANCE",
+"- Une relance peut etre envisagee vers 3 jours sans reponse, jamais automatiquement. Maximum 2 relances sans reponse, puis on arrete clairement. Zero relance est souvent la bonne reponse.",
+"- Un refus clair, un blocage ou une demande d'arret = on respecte et on arrete."
+].join("\n");
+
+const SYSTEM_PROMPT = `Tu es un coach de conversation et de seduction, direct, complice et bienveillant, comme un bon pote qui n'hesite pas a dire les choses avec humour. Tu aides un utilisateur francophone a repondre aux personnes avec qui il echange (applications, entourage, vie quotidienne).
+
+PRINCIPES
+- Authenticite d'abord : les messages proposes doivent ressembler a l'utilisateur et suivre le style decrit dans son profil. Jamais de phrases toutes faites, ringardes ou lourdes.
+- Tu peux utiliser des techniques de seduction legitimes (taquinerie, curiosite, proposition concrete, timing, rester leger). Tu REFUSES le mensonge, la pression, la culpabilisation, la jalousie fabriquee, le chantage affectif et tout contournement d'un refus. Si l'utilisateur demande quelque chose de ce genre, propose une alternative honnete et efficace.
+- Distingue toujours les FAITS observables (ce qui est ecrit), les HYPOTHESES (plusieurs lectures possibles) et ce que tu ne sais pas. Tu ne lis pas dans les pensees. Un media non visible ([media non visible]) ou une partie illisible ([?]) est une information manquante, pas une preuve.
+- Recommande parfois de ne rien envoyer ou d'arreter. Si un refus est clair, on respecte.
+- Aide-le a reduire ses reflexes de surinvestissement s'ils sont decrits dans son profil : messages plus courts, pas de justifications ni d'excuses inutiles, une proposition concrete plutot qu'une demande de reassurance.
+- Signale poliment les comportements preoccupants (controle, mepris, culpabilisation, incoherences repetees) et aussi les erreurs de l'utilisateur, sans le rabaisser.
+- Le score d'interet est un repere subjectif, jamais une probabilite : mets null si les elements sont insuffisants.
+- Si une information manquante changerait vraiment ta recommandation, pose 1 a 4 questions precises dans "questions" (et laisse le reste minimal).
+- Reponds en francais. Les messages proposes sont prets a copier, sans guillemets ni explication autour.
+- L'utilisateur valide toujours lui-meme ce qu'il envoie.
+
+FORMAT : reponds UNIQUEMENT par un objet JSON valide, sans texte autour.`;
+
+const SCHEMA_DETAIL = `{
+ "questions": ["question precise si info manquante, sinon tableau vide"],
+ "verdict": "recommandation directe en 1-2 phrases",
+ "dynamique": "complicite / flirt / distance / ambiguite / desequilibre, en 2-4 phrases",
+ "faits": ["faits observables dans l'echange"],
+ "hypotheses": ["lectures possibles, formulees comme des hypotheses"],
+ "signaux_positifs": ["..."],
+ "signaux_preoccupants": ["..."],
+ "reciprocite": "qui initie, entretient, concretise",
+ "interet": {"score": 6, "incertitude": "faible|moyenne|elevee", "raison": "pourquoi, ou null pour score si non evaluable"},
+ "action": "repondre|attendre|relancer|appeler|proposer_rdv|clarifier|ne_rien_envoyer|arreter",
+ "moment": "quand agir et pourquoi",
+ "message_recommande": {"texte": "message pret a copier ou chaine vide si ne rien envoyer", "pourquoi": "courte justification"},
+ "variantes": [{"style": "naturelle|drole|seduisante|directe|romantique", "texte": "...", "pourquoi": "..."}],
+ "a_eviter": ["formulations ou comportements a eviter"],
+ "suite_possible": ["si elle repond X -> faire Y"],
+ "coach": "remarque franche et bienveillante sur le comportement de l'utilisateur (ou chaine vide)"
+}`;
+const SCHEMA_EXPRESS = `{
+ "questions": [],
+ "verdict": "1 phrase",
+ "action": "repondre|attendre|relancer|appeler|proposer_rdv|clarifier|ne_rien_envoyer|arreter",
+ "moment": "quand",
+ "message_recommande": {"texte": "message pret a copier ou chaine vide", "pourquoi": "tres court"}
+}`;
+
+const MAX_IMAGES = 6;
+let S = load();
+let view = "dossiers";
+let currentDossier = null;
+let lastResult = null;
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s) return s; }catch(e){}
+  return { profile: DEFAULT_PROFILE, settings:{workerUrl:"",token:"",provider:"mistral",myName:""}, dossiers:[] };
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
+function toast(t){ const d=document.createElement("div"); d.className="toast"; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2200); }
+function h(tag, attrs, ...kids){
+  const e=document.createElement(tag);
+  for(const k in (attrs||{})){
+    if(k==="class") e.className=attrs[k];
+    else if(k.startsWith("on")) e.addEventListener(k.slice(2), attrs[k]);
+    else if(k==="value") e.value=attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  kids.flat().forEach(c=>{ if(c==null||c===false) return; e.appendChild(typeof c==="string"||typeof c==="number"?document.createTextNode(String(c)):c); });
+  return e;
+}
+function copy(text){
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(()=>toast("Copie ✔"),()=>fallbackCopy(text)); }
+  else fallbackCopy(text);
+}
+function fallbackCopy(text){
+  const t=document.createElement("textarea"); t.value=text; document.body.appendChild(t); t.select();
+  try{ document.execCommand("copy"); toast("Copie ✔"); }catch(e){ toast("Copie impossible"); }
+  t.remove();
+}
+function fmtDate(iso){ const d=new Date(iso); return d.toLocaleDateString("fr-FR")+" "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}); }
+function esc(s){ return String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
+function profileIncomplete(){ return S.profile.indexOf("A COMPLETER")>=0; }
+
+/* ---------- Anonymisation ---------- */
+function anonymize(text, d){
+  let t = text;
+  const map = [];
+  if(S.settings.myName) map.push([S.settings.myName, "Moi"]);
+  if(d.realName) map.push([d.realName, d.pseudo||"Elle"]);
+  (d.otherNames||"").split(",").map(s=>s.trim()).filter(Boolean).forEach((n,i)=>map.push([n, "Proche"+String.fromCharCode(65+i)]));
+  map.sort((a,b)=>b[0].length-a[0].length);
+  map.forEach(([from,to])=>{ t = t.replace(new RegExp("(^|[^\\p{L}])"+esc(from)+"(?![\\p{L}])","giu"), (m,p)=>p+to); });
+  t = t.replace(/https?:\/\/\S+/g,"[lien]").replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g,"[email]").replace(/(\+?\d[\d .-]{7,}\d)/g,"[numero]");
+  return t;
+}
+
+/* ---------- Parsing WhatsApp ---------- */
+function parseWhatsApp(raw){
+  const re=/^(\d{1,2}\/\d{1,2}\/\d{2,4}),? (\d{1,2}:\d{2})(?::\d{2})? - ([^:]{1,40}): ([\s\S]*)$/;
+  const lines=raw.replace(/\r/g,"").split("\n");
+  const msgs=[]; let cur=null;
+  for(const line of lines){
+    const m=line.match(re);
+    if(m){ cur={date:m[1],time:m[2],from:m[3].trim(),text:m[4]}; msgs.push(cur); }
+    else if(cur && line.trim()){ cur.text+="\n"+line; }
+  }
+  return msgs;
+}
+function parseDate(d,t){
+  const [dd,mm,yy]=d.split("/").map(Number); const [H,M]=t.split(":").map(Number);
+  return new Date(yy<100?2000+yy:yy, mm-1, dd, H, M);
+}
+function buildConversation(raw, dossier){
+  const msgs=parseWhatsApp(raw);
+  if(msgs.length<3){
+    let t=anonymize(raw.trim(), dossier);
+    if(t.length>12000) t="[debut tronque]\n"+t.slice(-12000);
+    return {text:t, info:"Texte colle (format libre)"};
+  }
+  const MAXN=150;
+  const kept=msgs.slice(-MAXN);
+  const my=(S.settings.myName||"").toLowerCase();
+  const lines=kept.map(m=>{
+    const who = (my && m.from.toLowerCase()===my) ? "Moi" : (dossier.pseudo||"Elle");
+    let txt=m.text.replace(/<M[eé]dias omis>/gi,"[media non visible]").replace(/\n+/g," / ");
+    return "["+m.date+" "+m.time+"] "+who+": "+txt;
+  });
+  const last=kept[kept.length-1];
+  const lastWho = (my && last.from.toLowerCase()===my) ? "Moi" : (dossier.pseudo||"Elle");
+  const days=Math.floor((Date.now()-parseDate(last.date,last.time))/86400000);
+  const info="Export WhatsApp : "+msgs.length+" messages, les "+kept.length+" derniers sont fournis. Dernier message : "+lastWho+" le "+last.date+" a "+last.time+" (il y a "+days+" jour(s)).";
+  return {text: anonymize(info+"\n\n"+lines.join("\n"), dossier), info};
+}
+
+/* ---------- Appel IA ---------- */
+async function callAI(messages, opts){
+  const st=S.settings; opts=opts||{};
+  if(!st.workerUrl||!st.token) throw new Error("Configure d'abord l'adresse du relais et le jeton dans Reglages.");
+  const res=await fetch(st.workerUrl,{method:"POST",headers:{"Content-Type":"application/json","X-App-Token":st.token},
+    body:JSON.stringify({provider:opts.provider||st.provider,messages,json:!!opts.json,temperature:opts.temperature||0.7,max_tokens:opts.max_tokens||1800})});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error((data.error||("Erreur "+res.status))+(data.status?" ("+data.status+")":""));
+  return data.content||"";
+}
+function parseJSON(txt){
+  const a=txt.indexOf("{"), b=txt.lastIndexOf("}");
+  if(a<0||b<0) throw new Error("Reponse de l'IA illisible. Reessaie.");
+  return JSON.parse(txt.slice(a,b+1));
+}
+function dossierContext(d){
+  const ev=(d.events||[]).map(e=>"- "+e.date+" : "+anonymize(e.text,d)).join("\n")||"(aucun)";
+  const hist=(d.history||[]).slice(-3).map(x=>"- "+x.date.slice(0,10)+" action conseillee : "+(x.result.action||"?")+(x.sent?" ; message reellement envoye : "+anonymize(x.sent,d):" ; rien d'envoye confirme")).join("\n")||"(aucun)";
+  return "DOSSIER ("+(d.pseudo||"Elle")+")\nContexte de rencontre / intention : "+anonymize(d.context||"(non precise)",d)+"\nEvenements ajoutes manuellement (rencontres, appels, vocaux...) :\n"+ev+"\nAnalyses precedentes :\n"+hist;
+}
+
+/* ---------- Captures d'ecran ---------- */
+async function fileToImage(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error("Image illisible")); i.src=url; });
+    const MAX=1400; let w=img.naturalWidth, hh=img.naturalHeight; const sc=Math.min(1,MAX/Math.max(w,hh));
+    w=Math.round(w*sc); hh=Math.round(hh*sc);
+    const c=document.createElement("canvas"); c.width=w; c.height=hh;
+    const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,w,hh); x.drawImage(img,0,0,w,hh);
+    return {id:uid(), dataUrl:c.toDataURL("image/jpeg",0.82), w, h:hh};
+  } finally { URL.revokeObjectURL(url); }
+}
+function openMaskEditor(imgObj, onDone){
+  const rects=[]; let cur=null;
+  const cv=document.createElement("canvas"); cv.width=imgObj.w; cv.height=imgObj.h;
+  const ctx=cv.getContext("2d"); const base=new Image();
+  function redraw(){
+    ctx.drawImage(base,0,0,imgObj.w,imgObj.h);
+    ctx.fillStyle="#000"; rects.forEach(r=>ctx.fillRect(r.x,r.y,r.w,r.h));
+    if(cur){ ctx.fillStyle="rgba(0,0,0,.6)"; ctx.fillRect(cur.x,cur.y,cur.w,cur.h); ctx.strokeStyle="#ff5c7a"; ctx.lineWidth=3; ctx.strokeRect(cur.x,cur.y,cur.w,cur.h); }
+  }
+  function pt(e){ const r=cv.getBoundingClientRect(); return {x:(e.clientX-r.left)*imgObj.w/r.width, y:(e.clientY-r.top)*imgObj.h/r.height}; }
+  let start=null;
+  cv.addEventListener("pointerdown",e=>{ cv.setPointerCapture(e.pointerId); start=pt(e); cur={x:start.x,y:start.y,w:0,h:0}; });
+  cv.addEventListener("pointermove",e=>{ if(!start)return; const p=pt(e); cur={x:Math.min(start.x,p.x),y:Math.min(start.y,p.y),w:Math.abs(p.x-start.x),h:Math.abs(p.y-start.y)}; redraw(); });
+  const end=()=>{ if(cur&&cur.w>4&&cur.h>4) rects.push(cur); cur=null; start=null; redraw(); };
+  cv.addEventListener("pointerup",end); cv.addEventListener("pointercancel",end);
+  const modal=h("div",{class:"modal"},
+    h("div",{class:"note"},"Dessine des rectangles avec le doigt pour masquer un nom, une photo de profil ou toute information personnelle avant l'envoi."),
+    h("div",{class:"cv"},cv),
+    h("div",{class:"row"},
+      h("button",{class:"b s sm",onclick:()=>{ rects.push({x:0,y:0,w:imgObj.w,h:Math.round(imgObj.h*0.13)}); redraw(); }},"Masquer le bandeau du haut"),
+      h("button",{class:"b s sm",onclick:()=>{ rects.pop(); redraw(); }},"Annuler le dernier")),
+    h("div",{class:"row"},
+      h("button",{class:"b",onclick:()=>{ redraw(); imgObj.dataUrl=cv.toDataURL("image/jpeg",0.85); modal.remove(); onDone(); }},"Appliquer"),
+      h("button",{class:"b s",onclick:()=>modal.remove()},"Annuler")));
+  base.onload=()=>{ redraw(); document.body.appendChild(modal); };
+  base.src=imgObj.dataUrl;
+}
+async function transcribeImages(btn, d){
+  const a=analyseState;
+  if(!a.images.length){ toast("Ajoute d'abord des captures"); return; }
+  const pseudo=d.pseudo||"Elle";
+  const prompt="Ces captures d'ecran sont des morceaux consecutifs d'une meme conversation de messagerie, fournies dans l'ordre. Transcris fidelement tous les messages visibles, du plus ancien au plus recent, sans doublons quand deux captures se chevauchent. Les bulles alignees a droite (souvent colorees) sont en general ecrites par l'utilisateur : ecris \"Moi\". Les bulles a gauche sont celles de l'autre personne : ecris \""+pseudo+"\". Note la date ou l'heure quand elle est visible. Pour les medias ecris [photo], [video], [vocal 0:23], [sticker], [story] ; pour une reaction emoji ajoute (reaction : X). Si un passage est illisible ou si l'auteur est incertain, ecris [?]. N'invente rien. Ne recopie aucun nom de personne : utilise uniquement \"Moi\" et \""+pseudo+"\". Reponds en JSON : {\"messages\":[{\"qui\":\"Moi ou "+pseudo+"\",\"heure\":\"\",\"texte\":\"\"}],\"remarques\":\"incertitudes eventuelles\"}";
+  const content=[{type:"text",text:prompt}].concat(a.images.map(i=>({type:"image_url",image_url:i.dataUrl})));
+  const old=btn.textContent; btn.disabled=true; btn.innerHTML=""; btn.appendChild(h("span",{class:"spin"})); btn.appendChild(document.createTextNode("Lecture des captures..."));
+  try{
+    const txt=await callAI([{role:"user",content}],{provider:"mistral",json:true,max_tokens:3500,temperature:0.1});
+    const r=parseJSON(txt);
+    const lines=(r.messages||[]).map(m=>"["+(m.heure||"?")+"] "+(m.qui||"?")+": "+String(m.texte||"").replace(/\n+/g," / "));
+    if(!lines.length) throw new Error("Aucun message lu. Essaie avec des captures plus nettes.");
+    a.text=(a.text?a.text.trim()+"\n\n":"")+lines.join("\n");
+    a.notice=(r.remarques||"")+" ";
+    a.images=[];
+    toast("Captures lues : verifie la transcription");
+    render();
+  }catch(e){ btn.disabled=false; btn.textContent=old; toast("Echec : "+e.message); }
+}
+
+/* ---------- Vues ---------- */
+function setView(v){ view=v; currentDossier=null; lastResult=null; render(); window.scrollTo(0,0); }
+function renderNav(){
+  const items=[["dossiers","📁","Dossiers"],["analyse","✨","Analyser"],["profil","🧭","Profil"],["reglages","⚙️","Reglages"]];
+  const nav=document.getElementById("nav"); nav.innerHTML="";
+  items.forEach(([k,i,l])=>nav.appendChild(h("button",{class:view===k?"on":"",onclick:()=>setView(k)},h("span",{class:"i"},i),l)));
+}
+function render(){
+  renderNav();
+  const m=document.getElementById("main"); m.innerHTML="";
+  if(view==="dossiers") m.appendChild(currentDossier?viewDossier():viewDossiers());
+  else if(view==="analyse") m.appendChild(viewAnalyse());
+  else if(view==="profil") m.appendChild(viewProfil());
+  else m.appendChild(viewReglages());
+}
+
+function viewDossiers(){
+  const w=h("div");
+  if(profileIncomplete()) w.appendChild(h("div",{class:"warnbox"},"Commence par completer ton profil dans l'onglet Profil : sans lui, les conseils seront generiques."));
+  w.appendChild(h("div",{class:"row",style:"margin-bottom:12px"},h("button",{class:"b",onclick:()=>{
+    const d={id:uid(),pseudo:"",realName:"",otherNames:"",context:"",events:[],history:[],createdAt:new Date().toISOString()};
+    S.dossiers.unshift(d); save(); currentDossier=d.id; render();
+  }},"+ Nouveau dossier")));
+  if(!S.dossiers.length) w.appendChild(h("div",{class:"card mut"},"Aucun dossier pour l'instant. Cree-en un avec un pseudonyme pour chaque personne."));
+  const c=h("div",{class:"card"});
+  S.dossiers.forEach(d=>c.appendChild(h("div",{class:"item",onclick:()=>{currentDossier=d.id;render();}},
+    h("div",{},h("b",{},d.pseudo||"(sans pseudo)"),h("div",{class:"note"},(d.history||[]).length+" analyse(s)"+(d.context?" · "+d.context.slice(0,40):""))),h("span",{class:"mut"},"›"))));
+  if(S.dossiers.length) w.appendChild(c);
+  return w;
+}
+function viewDossier(){
+  const d=S.dossiers.find(x=>x.id===currentDossier); const w=h("div");
+  w.appendChild(h("button",{class:"b s sm",onclick:()=>{currentDossier=null;render();}},"‹ Retour"));
+  const card=h("div",{class:"card",style:"margin-top:10px"});
+  const f=(label,key,ph,ta)=>{ card.appendChild(h("label",{},label)); const e=h(ta?"textarea":"input",{placeholder:ph||"",oninput:ev=>{d[key]=ev.target.value;save();}}); e.value=d[key]||""; card.appendChild(e); };
+  f("Pseudonyme (ce qui sera envoye a l'IA)","pseudo","ex : Montpellier-A");
+  f("Prenom reel (masque dans le texte avant envoi)","realName","");
+  f("Autres prenoms a masquer (separes par des virgules)","otherNames","ex : cousin, amie");
+  f("Contexte : ou vous vous etes rencontres, ce que tu recherches avec elle","context","",true);
+  w.appendChild(card);
+  const ev=h("div",{class:"card"},h("h3",{},"Evenements ajoutes a la main"),h("div",{class:"note"},"Rencontres, appels, vocaux : l'IA ne voit pas les medias."));
+  (d.events||[]).forEach((e,i)=>ev.appendChild(h("div",{class:"item"},h("div",{},h("b",{},e.date),h("div",{},e.text)),h("button",{class:"b d sm",onclick:()=>{d.events.splice(i,1);save();render();}},"✕"))));
+  const date=h("input",{type:"date",value:new Date().toISOString().slice(0,10)}); const txt=h("textarea",{placeholder:"Ex : on s'est vus 2 fois en groupe, pas de tete-a-tete",style:"min-height:70px"});
+  ev.appendChild(h("label",{},"Nouvel evenement")); ev.appendChild(date); ev.appendChild(txt);
+  ev.appendChild(h("div",{style:"margin-top:8px"},h("button",{class:"b sm",onclick:()=>{ if(!txt.value.trim())return; d.events=d.events||[]; d.events.push({date:date.value,text:txt.value.trim()}); save(); render(); }},"Ajouter")));
+  w.appendChild(ev);
+  const hi=h("div",{class:"card"},h("h3",{},"Historique des analyses"));
+  if(!(d.history||[]).length) hi.appendChild(h("div",{class:"mut"},"Aucune analyse."));
+  (d.history||[]).slice().reverse().forEach(x=>hi.appendChild(h("div",{class:"item"},h("div",{},h("b",{},fmtDate(x.date)+" · "+(x.result.action||"")),h("div",{class:"note"},x.result.verdict||""),
+    h("div",{class:"note"},x.sent?"✅ Envoye (confirme par toi) : "+x.sent:"Aucun envoi confirme")))));
+  w.appendChild(hi);
+  w.appendChild(h("button",{class:"b d",onclick:()=>{ if(confirm("Supprimer ce dossier et son historique ?")){ S.dossiers=S.dossiers.filter(x=>x.id!==d.id); save(); currentDossier=null; render(); } }},"Supprimer ce dossier"));
+  return w;
+}
+
+let analyseState={dossierId:null,mode:"detail",text:"",extra:"",images:[],notice:""};
+function viewAnalyse(){
+  const w=h("div"); const a=analyseState;
+  if(!S.dossiers.length){ w.appendChild(h("div",{class:"card"},"Cree d'abord un dossier dans l'onglet Dossiers.")); return w; }
+  if(profileIncomplete()) w.appendChild(h("div",{class:"warnbox"},"Ton profil n'est pas complete (onglet Profil). Les conseils seront moins personnalises."));
+  if(!a.dossierId||!S.dossiers.find(d=>d.id===a.dossierId)) a.dossierId=S.dossiers[0].id;
+  const d=S.dossiers.find(x=>x.id===a.dossierId);
+  const card=h("div",{class:"card"});
+  const sel=h("select",{onchange:e=>{a.dossierId=e.target.value;}}); S.dossiers.forEach(x=>sel.appendChild(h("option",{value:x.id},x.pseudo||"(sans pseudo)"))); sel.value=a.dossierId;
+  card.appendChild(h("label",{},"Dossier")); card.appendChild(sel);
+  const mode=h("select",{onchange:e=>{a.mode=e.target.value;}},h("option",{value:"detail"},"Detaille"),h("option",{value:"express"},"Express")); mode.value=a.mode;
+  card.appendChild(h("label",{},"Mode")); card.appendChild(mode);
+
+  card.appendChild(h("label",{},"Captures d'ecran (jusqu'a "+MAX_IMAGES+", dans l'ordre)"));
+  const pick=h("input",{type:"file",accept:"image/*",multiple:"multiple",onchange:async e=>{
+    const files=Array.from(e.target.files||[]);
+    for(const f of files){ if(a.images.length>=MAX_IMAGES){ toast("Maximum "+MAX_IMAGES+" captures"); break; } try{ a.images.push(await fileToImage(f)); }catch(x){ toast(x.message); } }
+    render();
+  }});
+  card.appendChild(pick);
+  if(a.images.length){
+    const th=h("div",{class:"thumbs"});
+    a.images.forEach((im,idx)=>th.appendChild(h("div",{class:"th"},h("img",{src:im.dataUrl}),
+      h("div",{class:"row"},
+        h("button",{class:"b s sm",onclick:()=>openMaskEditor(im,()=>render())},"Masquer"),
+        h("button",{class:"b d sm",onclick:()=>{a.images.splice(idx,1);render();}},"✕")))));
+    card.appendChild(th);
+    card.appendChild(h("div",{class:"warnbox"},"Les captures contiennent peut-etre des noms et des photos. Masque-les avant l'envoi : l'anonymisation automatique ne s'applique qu'au texte. Les images sont lues par Mistral puis supprimees de l'application ; seul le texte transcrit est conserve."));
+    const tb=h("button",{class:"b",style:"margin-top:8px;width:100%"},"Lire les captures");
+    tb.addEventListener("click",()=>transcribeImages(tb,d));
+    card.appendChild(tb);
+  }
+
+  const ta=h("textarea",{placeholder:"Colle la conversation, importe un export WhatsApp (.txt) ou lis des captures ci-dessus",style:"min-height:170px",oninput:e=>{a.text=e.target.value;}}); ta.value=a.text;
+  card.appendChild(h("label",{},"Conversation (texte) - verifie-la apres lecture des captures")); card.appendChild(ta);
+  if(a.notice&&a.notice.trim()) card.appendChild(h("div",{class:"warnbox"},"Remarques de la lecture : "+a.notice));
+  const file=h("input",{type:"file",accept:".txt,text/plain",onchange:async e=>{ const f=e.target.files[0]; if(!f)return; a.text=await f.text(); render(); toast("Fichier charge"); }});
+  card.appendChild(file);
+  const ex=h("textarea",{placeholder:"Ce que tu veux obtenir, ce qui s'est passe hors messages (rencontre, vocal, appel)...",style:"min-height:80px",oninput:e=>{a.extra=e.target.value;}}); ex.value=a.extra;
+  card.appendChild(h("label",{},"Contexte supplementaire et objectif")); card.appendChild(ex);
+  card.appendChild(h("div",{class:"note",style:"margin-top:8px"},"Les prenoms indiques dans le dossier sont remplaces par des pseudonymes avant envoi. Les liens, emails et numeros sont masques."));
+  const out=h("div",{id:"out"});
+  const btn=h("button",{class:"b",style:"margin-top:10px;width:100%",onclick:()=>runAnalysis(btn,out,null)},"Analyser");
+  card.appendChild(btn); w.appendChild(card); w.appendChild(out);
+  if(lastResult) renderResult(out,lastResult.result,lastResult.dossier,lastResult.entry);
+  return w;
+}
+
+async function runAnalysis(btn,out,answers){
+  const a=analyseState; const d=S.dossiers.find(x=>x.id===a.dossierId);
+  if(!a.text.trim()&&!a.extra.trim()){ toast("Ajoute une conversation ou un contexte"); return; }
+  btn.disabled=true; const old=btn.textContent; btn.innerHTML=""; btn.appendChild(h("span",{class:"spin"})); btn.appendChild(document.createTextNode("Analyse en cours..."));
+  out.innerHTML="";
+  try{
+    const conv=a.text.trim()?buildConversation(a.text,d):{text:"(pas de conversation fournie)",info:""};
+    const user = "Date et heure actuelles : "+new Date().toLocaleString("fr-FR")+"\n\n"+S.profile+"\n\n"+dossierContext(d)+
+      "\n\nCONVERSATION\n"+conv.text+"\n\nCONTEXTE SUPPLEMENTAIRE / OBJECTIF DE L'UTILISATEUR\n"+anonymize(a.extra||"(non precise)",d)+
+      (answers?"\n\nREPONSES DE L'UTILISATEUR A TES QUESTIONS\n"+anonymize(answers,d):"")+
+      "\n\nMODE : "+(a.mode==="express"?"EXPRESS (verdict, action, moment, message uniquement)":"DETAILLE")+"\nFormat JSON attendu :\n"+(a.mode==="express"?SCHEMA_EXPRESS:SCHEMA_DETAIL);
+    const txt=await callAI([{role:"system",content:SYSTEM_PROMPT},{role:"user",content:user}],{json:true,max_tokens:a.mode==="express"?600:2200});
+    const result=parseJSON(txt);
+    const entry={date:new Date().toISOString(),mode:a.mode,result,sent:null};
+    if(!(result.questions&&result.questions.length)){ d.history=d.history||[]; d.history.push(entry); save(); }
+    lastResult={result,dossier:d.id,entry};
+    renderResult(out,result,d.id,entry);
+  }catch(e){ out.appendChild(h("div",{class:"err"},String(e.message||e))); }
+  btn.disabled=false; btn.textContent=old;
+}
+
+const ACTIONS={repondre:"Repondre",attendre:"Attendre",relancer:"Relancer",appeler:"Appeler",proposer_rdv:"Proposer un rendez-vous",clarifier:"Clarifier",ne_rien_envoyer:"Ne rien envoyer",arreter:"Arreter"};
+function list(title,items,cls){
+  if(!items||!items.length) return null;
+  return h("div",{},h("b",{class:cls||""},title),h("ul",{},items.map(i=>h("li",{},typeof i==="string"?i:JSON.stringify(i)))));
+}
+function msgBlock(text,pourquoi,label,best,entry){
+  const box=h("div",{class:"msg"+(best?" best":"")},h("div",{class:"note",style:"margin-bottom:4px"},label||""),h("div",{},text));
+  const row=h("div",{class:"row",style:"margin-top:8px"});
+  row.appendChild(h("button",{class:"b sm",onclick:()=>copy(text)},"Copier"));
+  row.appendChild(h("button",{class:"b s sm",onclick:()=>{ if(entry){ entry.sent=text; save(); toast("Note comme envoye"); } }},"Je l'ai envoye"));
+  const sel=h("select",{style:"width:auto"},h("option",{value:""},"Ajuster..."),["plus court","plus drole","plus direct","plus subtil","moins romantique","plus chaleureux","plus naturel"].map(x=>h("option",{value:x},x)));
+  sel.addEventListener("change",async()=>{
+    if(!sel.value)return; const instr=sel.value; sel.disabled=true;
+    try{
+      const txt=await callAI([{role:"system",content:SYSTEM_PROMPT},{role:"user",content:S.profile+"\n\nReecris ce message, "+instr+", en gardant le style de l'utilisateur et le meme objectif. Message : "+text+"\nReponds uniquement par {\"texte\":\"...\"}"}],{json:true,max_tokens:300});
+      const n=parseJSON(txt).texte; if(n){ box.replaceWith(msgBlock(n,pourquoi,label+" ("+instr+")",best,entry)); }
+    }catch(e){ toast("Echec : "+e.message); }
+    sel.disabled=false; sel.value="";
+  });
+  row.appendChild(sel); box.appendChild(row);
+  if(pourquoi) box.appendChild(h("div",{class:"note",style:"margin-top:6px"},"Pourquoi : "+pourquoi));
+  return box;
+}
+function renderResult(out,r,dossierId,entry){
+  out.innerHTML="";
+  if(r.questions&&r.questions.length){
+    const c=h("div",{class:"card"},h("h3",{},"J'ai besoin de precisions"),h("ul",{},r.questions.map(q=>h("li",{},q))));
+    const ta=h("textarea",{placeholder:"Tes reponses..."}); c.appendChild(ta);
+    const b=h("button",{class:"b",style:"margin-top:8px",onclick:()=>runAnalysis(b,out,ta.value)},"Relancer l'analyse");
+    c.appendChild(b); out.appendChild(c); if(!r.verdict) return;
+  }
+  const head=h("div",{class:"card"});
+  head.appendChild(h("div",{class:"row"},h("span",{class:"pill ok"},ACTIONS[r.action]||r.action||"—")));
+  if(r.verdict) head.appendChild(h("div",{class:"verdict",style:"margin-top:8px"},r.verdict));
+  if(r.moment) head.appendChild(h("div",{class:"mut",style:"margin-top:6px"},"⏱ "+r.moment));
+  out.appendChild(head);
+  const mr=r.message_recommande;
+  if(mr&&mr.texte) out.appendChild(msgBlock(mr.texte,mr.pourquoi,"Message recommande",true,entry));
+  else if(mr) out.appendChild(h("div",{class:"card mut"},"Recommandation : ne rien envoyer pour l'instant."));
+  if(r.dynamique||r.faits){
+    const c=h("div",{class:"card"});
+    if(r.dynamique) c.appendChild(h("div",{},h("b",{},"Dynamique"),h("div",{},r.dynamique)));
+    [list("Faits observables",r.faits),list("Hypotheses",r.hypotheses),list("Signaux positifs",r.signaux_positifs,"ok"),list("Signaux preoccupants",r.signaux_preoccupants,"bad")].forEach(x=>x&&c.appendChild(x));
+    if(r.reciprocite) c.appendChild(h("div",{style:"margin-top:8px"},h("b",{},"Reciprocite"),h("div",{},r.reciprocite)));
+    if(r.interet){
+      const sc=(r.interet.score==null)?"non evaluable":r.interet.score+"/10";
+      c.appendChild(h("div",{style:"margin-top:8px"},h("b",{},"Interet estime : "+sc),h("div",{class:"note"},"Repere subjectif, pas une probabilite. Incertitude : "+(r.interet.incertitude||"?")+(r.interet.raison?" — "+r.interet.raison:""))));
+    }
+    out.appendChild(c);
+  }
+  if(r.variantes&&r.variantes.length){
+    const c=h("div",{class:"card"},h("h3",{},"Variantes"));
+    r.variantes.forEach(v=>c.appendChild(msgBlock(v.texte,v.pourquoi,v.style,false,entry)));
+    out.appendChild(c);
+  }
+  const c2=h("div",{class:"card"});
+  [list("A eviter",r.a_eviter,"bad"),list("Suite possible",r.suite_possible)].forEach(x=>x&&c2.appendChild(x));
+  if(r.coach) c2.appendChild(h("div",{style:"margin-top:8px"},h("b",{},"Le mot du coach"),h("div",{},r.coach)));
+  if(c2.childNodes.length) out.appendChild(c2);
+}
+
+function viewProfil(){
+  const w=h("div"); const c=h("div",{class:"card"},h("h3",{},"Ton profil et tes criteres"),h("div",{class:"note"},"Ce texte est envoye avec chaque analyse mais reste stocke uniquement sur ce telephone. Remplace le modele par ton profil, puis modifie-le quand tes envies evoluent."));
+  const ta=h("textarea",{style:"min-height:420px",oninput:e=>{S.profile=e.target.value;save();}}); ta.value=S.profile; c.appendChild(ta);
+  c.appendChild(h("div",{style:"margin-top:8px"},h("button",{class:"b s sm",onclick:()=>{ if(confirm("Remettre le modele vierge ? Ton profil actuel sera perdu.")){ S.profile=DEFAULT_PROFILE; save(); render(); } }},"Reinitialiser")));
+  w.appendChild(c); return w;
+}
+
+function viewReglages(){
+  const w=h("div"); const st=S.settings;
+  const c=h("div",{class:"card"},h("h3",{},"Connexion a l'IA"));
+  const f=(label,key,ph,type)=>{ c.appendChild(h("label",{},label)); const e=h("input",{type:type||"text",placeholder:ph||"",oninput:ev=>{st[key]=ev.target.value.trim();save();}}); e.value=st[key]||""; c.appendChild(e); };
+  f("Adresse du relais (Cloudflare Worker)","workerUrl","https://mon-relais.mon-compte.workers.dev");
+  f("Jeton de l'application","token","Le meme que APP_TOKEN","password");
+  c.appendChild(h("label",{},"Fournisseur pour le texte"));
+  const p=h("select",{onchange:e=>{st.provider=e.target.value;save();}},h("option",{value:"mistral"},"Mistral"),h("option",{value:"groq"},"Groq")); p.value=st.provider; c.appendChild(p);
+  c.appendChild(h("div",{class:"note"},"La lecture des captures utilise toujours Mistral."));
+  f("Ton prenom tel qu'il apparait dans les exports WhatsApp","myName","Ton prenom");
+  const res=h("div");
+  c.appendChild(h("div",{style:"margin-top:10px"},h("button",{class:"b",onclick:async()=>{ res.innerHTML=""; try{ const t=await callAI([{role:"user",content:"Reponds uniquement : OK"}],{max_tokens:10}); res.appendChild(h("div",{class:"msg"},"Connexion OK : "+t)); }catch(e){ res.appendChild(h("div",{class:"err"},e.message)); } }},"Tester la connexion")));
+  c.appendChild(res); w.appendChild(c);
+  const d=h("div",{class:"card"},h("h3",{},"Donnees"),h("div",{class:"note"},"Tout est stocke sur ce telephone (navigateur). Les messages analyses transitent par ton relais puis le fournisseur d'IA choisi."));
+  d.appendChild(h("div",{class:"row",style:"margin-top:10px"},
+    h("button",{class:"b s sm",onclick:()=>{ const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="coach-sauvegarde.json"; a.click(); }},"Exporter"),
+    h("button",{class:"b s sm",onclick:()=>document.getElementById("imp").click()},"Importer"),
+    h("button",{class:"b d sm",onclick:()=>{ if(confirm("Tout effacer definitivement ?")){ localStorage.removeItem(KEY); S=load(); render(); } }},"Tout effacer")));
+  d.appendChild(h("input",{type:"file",id:"imp",class:"hide",accept:".json",onchange:async e=>{ try{ S=JSON.parse(await e.target.files[0].text()); save(); render(); toast("Importe"); }catch(x){ toast("Fichier invalide"); } }}));
+  w.appendChild(d); return w;
+}
+
+render();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
